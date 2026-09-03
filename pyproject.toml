@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "karaoke-creator"
+version = "0.1.0"
+description = "Local audio + exact lyrics to word-highlighted karaoke MP4 pipeline"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "Artem Bocharov" }]
+dependencies = ["PyYAML>=6.0,<7"]
+
+[project.optional-dependencies]
+ml = ["faster-whisper>=1.1,<2"]
+whisperx = ["whisperx>=3.3,<4"]
+separation = ["demucs>=4,<5"]
+web = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1", "python-multipart>=0.0.20,<1"]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1"]
+
+[project.scripts]
+karaoke-gen = "karaoke_generator.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+

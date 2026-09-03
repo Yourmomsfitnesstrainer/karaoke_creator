@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+DEFAULT_CONFIG: dict[str, Any] = {
+    "alignment": {
+        "backend": "faster-whisper",
+        "language": "auto",
+        "model": "small",
+        "device": "auto",
+        "compute_type": "int8",
+        "min_similarity": 0.62,
+    },
+    "separation": {"enabled": "auto", "backend": "demucs", "model": "htdemucs"},
+    "video": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "background": "procedural",
+        "background_color": "#080B1A",
+    },
+    "karaoke": {
+        "font": "Arial",
+        "font_size": 72,
+        "max_lines": 2,
+        "max_chars_per_line": 42,
+        "active_color": "#FFD43B",
+        "inactive_color": "#F2F3F5",
+        "preview_color": "#A7ABB7",
+    },
+    "output": {"audio_mode": "instrumental", "video_bitrate": "8M", "audio_bitrate": "256k"},
+}
+
+
+def _merge(base: dict[str, Any], update: dict[str, Any]) -> dict[str, Any]:
+    for key, value in update.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            _merge(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
+def load_config(path: Path | None = None) -> dict[str, Any]:
+    config = deepcopy(DEFAULT_CONFIG)
+    candidate = path or (Path.cwd() / "config.yaml")
+    if candidate.exists():
+        loaded = yaml.safe_load(candidate.read_text(encoding="utf-8")) or {}
+        if not isinstance(loaded, dict):
+            raise ValueError(f"Config root must be a mapping: {candidate}")
+        _merge(config, loaded)
+    return config
+
