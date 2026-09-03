@@ -6,10 +6,20 @@ tags:
   - "entry-points"
 ---
 
-2 точки входа: CLI и локальный HTTP-интерфейс.
+## Overview
+Проект имеет два локальных входа: CLI и HTTP-интерфейс.
 
-## CLI
+## Content
+### CLI
 - `karaoke-gen` — console script из `@pyproject.toml`; диспетчер в `@src/karaoke_generator/cli.py`.
 
-## HTTP
-- `@src/karaoke_generator/web.py` — FastAPI-приложение: `GET /`, `POST /generate`, `GET /jobs/{job_id}/{filename}`.
+### HTTP
+- `GET /` — форма загрузки и индикатор выполнения.
+- `POST /api/jobs` — создаёт фоновую генерацию и возвращает URL статуса.
+- `GET /api/jobs/{job_id}` — возвращает состояние, процент, стадию, ошибку или ссылки.
+- `POST /generate` — синхронный fallback для клиента без JavaScript.
+- `GET /jobs/{job_id}/{filename}` — отдаёт разрешённый итоговый артефакт.
+- Реализация HTTP-поверхности находится в `@src/karaoke_generator/web.py`.
+
+## Examples
+Локальный Web-вход запускается командой `karaoke-gen web --port 8080`.

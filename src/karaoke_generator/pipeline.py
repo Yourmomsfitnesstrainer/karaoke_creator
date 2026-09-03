@@ -6,7 +6,7 @@ import logging
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import Callable, Iterator
 
 from .alignment import align_lyrics, create_backend
 from .audio import prepare_audio, probe_duration
@@ -18,6 +18,7 @@ from .subtitles import generate_ass
 
 
 LOGGER = logging.getLogger("karaoke_generator")
+ProgressCallback = Callable[[int, str], None]
 
 
 def _file_sha256(path: Path) -> str:
@@ -35,8 +36,15 @@ def _write_json(path: Path, payload: dict) -> None:
 
 
 @contextmanager
-def _stage(number: int, total: int, label: str) -> Iterator[None]:
+def _stage(
+    number: int,
+    total: int,
+    label: str,
+    progress_callback: ProgressCallback | None = None,
+) -> Iterator[None]:
     start = time.monotonic()
+    if progress_callback:
+        progress_callback(round((number - 1) * 100 / total), label)
     LOGGER.info("[%d/%d] %s...", number, total, label)
     try:
         yield
@@ -44,6 +52,8 @@ def _stage(number: int, total: int, label: str) -> Iterator[None]:
         LOGGER.exception("[%d/%d] %s failed after %.1fs", number, total, label, time.monotonic() - start)
         raise
     LOGGER.info("[%d/%d] %s done in %.1fs", number, total, label, time.monotonic() - start)
+    if progress_callback:
+        progress_callback(round(number * 100 / total), label)
 
 
 def generate(
@@ -53,6 +63,7 @@ def generate(
     config: dict,
     *,
     background: str | None = None,
+    progress_callback: ProgressCallback | None = None,
 ) -> dict[str, Path]:
     audio = audio.expanduser().resolve()
     lyrics = lyrics.expanduser().resolve()
@@ -73,7 +84,7 @@ def generate(
     source_key = _file_sha256(audio)
 
     source = work_dir / "source.wav"
-    with _stage(1, 5, "Preparing audio"):
+    with _stage(1, 5, "Preparing audio", progress_callback):
         if metadata.get("source_key") != source_key or not source.exists():
             prepare_audio(audio, source)
         else:
@@ -85,7 +96,7 @@ def generate(
     separation_key = f"{source_key}:{separation_config}:available={separation_available}"
     vocals = output_dir / "vocals.wav"
     instrumental = output_dir / "instrumental.wav"
-    with _stage(2, 5, "Separating vocals"):
+    with _stage(2, 5, "Separating vocals", progress_callback):
         enabled = separation_config.get("enabled", "auto")
         separator = DemucsSeparator(str(separation_config.get("model", "htdemucs")))
         can_reuse = metadata.get("separation_key") == separation_key and vocals.exists()
@@ -114,7 +125,7 @@ def generate(
     alignment_key = hashlib.sha256(
         f"{source_key}:{text_sha256(document)}:{alignment_config}:{separation_backend}".encode()
     ).hexdigest()
-    with _stage(3, 5, "Aligning exact lyrics"):
+    with _stage(3, 5, "Aligning exact lyrics", progress_callback):
         if metadata.get("alignment_key") == alignment_key and alignment_path.exists():
             alignment = AlignmentResult.from_dict(json.loads(alignment_path.read_text(encoding="utf-8")))
             LOGGER.info("Alignment cache hit")
@@ -142,7 +153,7 @@ def generate(
             _write_json(alignment_path, alignment.to_dict())
 
     ass_path = output_dir / "karaoke.ass"
-    with _stage(4, 5, "Generating karaoke subtitles"):
+    with _stage(4, 5, "Generating karaoke subtitles", progress_callback):
         karaoke_settings = dict(config["karaoke"])
         karaoke_settings.update(
             width=config["video"]["width"], height=config["video"]["height"]
@@ -155,7 +166,7 @@ def generate(
     if requested_audio_mode == "instrumental" and actual_audio_mode == "original":
         LOGGER.warning("Instrumental was requested but is unavailable; rendering original audio")
     video_path = output_dir / "karaoke.mp4"
-    with _stage(5, 5, "Rendering MP4"):
+    with _stage(5, 5, "Rendering MP4", progress_callback):
         render_video(ass_path, render_audio, video_path, config["video"], config["output"], background)
 
     metadata = {

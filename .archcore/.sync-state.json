@@ -61,6 +61,21 @@
       "source": "architecture/command-line-interface.spec.md",
       "target": "architecture/public-surface.doc.md",
       "type": "related"
+    },
+    {
+      "source": "architecture/web-generation-jobs.spec.md",
+      "target": "architecture/generation-pipeline.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/web-generation-jobs.spec.md",
+      "target": "architecture/public-surface.doc.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/web-generation-jobs.spec.md",
+      "target": "architecture/entry-points.doc.md",
+      "type": "related"
     }
   ]
 }

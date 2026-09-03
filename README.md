@@ -74,6 +74,10 @@ karaoke-gen web --port 8080
 
 Откройте <http://127.0.0.1:8080>.
 
+После запуска генерации страница показывает реальный прогресс пяти стадий в процентах,
+не перезагружается и по завершении выводит ссылки на артефакты и встроенное видео.
+При ошибке её текст появляется в том же блоке прогресса.
+
 ## Быстрый smoke demo без ML-модели
 
 Этот тест проверяет весь visual/render pipeline на синтетическом тоне и явно выбранных равномерных таймингах:
@@ -118,4 +122,3 @@ output/
 - [usersync](https://github.com/iamjrmh/usersync) — проверенный паттерн mapping пользовательских lyrics на timestamp grid.
 - [Demucs](https://github.com/facebookresearch/demucs) — two-stem vocal separation.
 - [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html) — libass `ass` filter.
-
