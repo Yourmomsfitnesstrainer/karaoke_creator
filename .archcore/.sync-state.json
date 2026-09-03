@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "files": {},
+  "relations": [
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "conventions/project-stack.rule.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "onboarding/running-the-project.guide.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "architecture/entry-points.doc.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "architecture/public-surface.doc.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "architecture/lyrics-alignment.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "architecture/audio-preparation.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "architecture/generation-pipeline.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "architecture/command-line-interface.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/lyrics-alignment.spec.md",
+      "target": "architecture/public-surface.doc.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/audio-preparation.spec.md",
+      "target": "architecture/public-surface.doc.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/generation-pipeline.spec.md",
+      "target": "architecture/public-surface.doc.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/command-line-interface.spec.md",
+      "target": "architecture/public-surface.doc.md",
+      "type": "related"
+    }
+  ]
+}

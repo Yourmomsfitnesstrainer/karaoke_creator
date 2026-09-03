@@ -14,5 +14,5 @@ demo/*-result/
 demo/frame-*.png
 demo/*.wav
 demo/*.mp3
+demo/*.aiff
 models/
-
