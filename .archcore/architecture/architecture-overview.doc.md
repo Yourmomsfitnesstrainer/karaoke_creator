@@ -6,7 +6,7 @@ tags:
   - "architecture-overview"
 ---
 
-5 modules; Python; FFmpeg/libass + faster-whisper; pytest
+5 modules; Python; FFmpeg/libass + faster-whisper + WhisperX; pytest
 
 | Area | Type | Covers |
 |---|---|---|

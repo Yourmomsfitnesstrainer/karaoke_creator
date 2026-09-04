@@ -24,6 +24,13 @@ def _parser() -> argparse.ArgumentParser:
     generate_parser.add_argument("--language")
     generate_parser.add_argument("--backend", choices=["faster-whisper", "whisperx", "uniform"])
     generate_parser.add_argument("--model")
+    generate_parser.add_argument(
+        "--vad",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Enable or disable vocal activity detection",
+    )
+    generate_parser.add_argument("--timing-offset-ms", type=int)
     generate_parser.add_argument("--audio-mode", choices=["original", "instrumental"])
     generate_parser.add_argument("--skip-separation", action="store_true")
     generate_parser.add_argument("--resolution", help="e.g. 1920x1080")
@@ -49,6 +56,12 @@ def _apply_overrides(config: dict, args: argparse.Namespace) -> None:
             config["alignment"][option] = value
     if getattr(args, "audio_mode", None):
         config["output"]["audio_mode"] = args.audio_mode
+    if getattr(args, "vad", None) is not None:
+        config["alignment"]["vad_filter"] = args.vad
+    if getattr(args, "timing_offset_ms", None) is not None:
+        if not -1000 <= args.timing_offset_ms <= 1000:
+            raise SystemExit("--timing-offset-ms must be between -1000 and 1000")
+        config["karaoke"]["timing_offset_ms"] = args.timing_offset_ms
     if getattr(args, "skip_separation", False):
         config["separation"]["enabled"] = False
     if getattr(args, "resolution", None):
@@ -70,12 +83,18 @@ def _doctor() -> int:
         print(f"FFmpeg/libass: MISSING ({exc})")
         if fallback:
             print(f"Found incompatible FFmpeg: {fallback}; ass={ffmpeg_has_ass(fallback)}")
-    try:
-        import faster_whisper  # noqa: F401
+    import importlib.util
 
-        print("faster-whisper: OK")
-    except ImportError:
-        print("faster-whisper: optional dependency missing")
+    print(
+        "faster-whisper: OK"
+        if importlib.util.find_spec("faster_whisper")
+        else "faster-whisper: optional dependency missing"
+    )
+    print(
+        "WhisperX: OK"
+        if importlib.util.find_spec("whisperx")
+        else "WhisperX: optional dependency missing"
+    )
     print(f"Demucs: {'OK' if DemucsSeparator.available() else 'optional dependency missing'}")
     return 0
 
@@ -115,4 +134,3 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-

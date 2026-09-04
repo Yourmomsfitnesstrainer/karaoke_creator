@@ -10,7 +10,7 @@ from typing import Callable, Iterator
 
 from .alignment import align_lyrics, create_backend
 from .audio import prepare_audio, probe_duration
-from .lyrics import parse_lyrics_file, text_sha256
+from .lyrics import cleanup_report, parse_lyrics_file, text_sha256
 from .models import AlignmentResult
 from .renderer import render_video
 from .separation import DemucsSeparator, original_audio_fallback
@@ -79,6 +79,10 @@ def generate(
     document = parse_lyrics_file(lyrics)
     processed_lyrics = output_dir / "processed_lyrics.txt"
     processed_lyrics.write_text(document.processed_text, encoding="utf-8")
+    cleanup_path = output_dir / "lyrics_cleanup.json"
+    _write_json(cleanup_path, cleanup_report(document))
+    if document.removed_lines:
+        LOGGER.info("Lyrics cleanup removed %d metadata lines", len(document.removed_lines))
     metadata_path = work_dir / "metadata.json"
     metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
     source_key = _file_sha256(audio)
@@ -131,10 +135,18 @@ def generate(
             LOGGER.info("Alignment cache hit")
         else:
             backend = create_backend(
-                str(alignment_config.get("backend", "faster-whisper")),
+                str(alignment_config.get("backend", "whisperx")),
                 str(alignment_config.get("model", "small")),
                 str(alignment_config.get("device", "auto")),
                 str(alignment_config.get("compute_type", "int8")),
+                use_lyrics_prompt=bool(alignment_config.get("use_lyrics_prompt", True)),
+                vad_filter=bool(alignment_config.get("vad_filter", True)),
+                vad_threshold=float(alignment_config.get("vad_threshold", 0.30)),
+                vad_min_silence_duration_ms=int(
+                    alignment_config.get("vad_min_silence_duration_ms", 1000)
+                ),
+                vad_speech_pad_ms=int(alignment_config.get("vad_speech_pad_ms", 600)),
+                align_models=dict(alignment_config.get("align_models", {})),
             )
             timed_words, detected_language = backend.transcribe(
                 vocals,
@@ -151,6 +163,21 @@ def generate(
                 float(alignment_config.get("min_similarity", 0.62)),
             )
             _write_json(alignment_path, alignment.to_dict())
+        quality = alignment.quality
+        LOGGER.info(
+            "ASR recognized %d words; matched %d/%d lyrics words (%.1f%%); interpolated %d",
+            quality.recognized_words,
+            quality.directly_aligned,
+            quality.total_words,
+            quality.aligned_ratio * 100,
+            quality.interpolated,
+        )
+        if quality.interpolated:
+            LOGGER.warning(
+                "%d lyrics words use interpolated timings; inspect %s",
+                quality.interpolated,
+                alignment_path,
+            )
 
     ass_path = output_dir / "karaoke.ass"
     with _stage(4, 5, "Generating karaoke subtitles", progress_callback):
@@ -175,6 +202,7 @@ def generate(
         "separation_backend": separation_backend,
         "alignment_key": alignment_key,
         "alignment_backend": alignment.backend,
+        "alignment_quality": alignment.to_dict()["quality"],
         "requested_audio_mode": requested_audio_mode,
         "actual_audio_mode": actual_audio_mode,
     }
@@ -184,6 +212,7 @@ def generate(
         "subtitles": ass_path,
         "alignment": alignment_path,
         "processed_lyrics": processed_lyrics,
+        "lyrics_cleanup": cleanup_path,
         "vocals": vocals,
         **({"instrumental": instrumental} if instrumental else {}),
     }

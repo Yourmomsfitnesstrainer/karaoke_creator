@@ -79,6 +79,7 @@ def generate_ass(result: AlignmentResult, output: Path, settings: dict) -> None:
     inactive = _ass_color(settings.get("inactive_color", "#F2F3F5"))
     preview = _ass_color(settings.get("preview_color", "#A7ABB7"))
     max_chars = int(settings.get("max_chars_per_line", 42))
+    timing_offset = float(settings.get("timing_offset_ms", 0)) / 1000.0
     lines = _split_visual_lines(result.lines, max_chars)
 
     header = f"""[Script Info]
@@ -100,14 +101,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     events: list[str] = []
     for index, line in enumerate(lines):
-        start = max(0.0, line.start)
-        end = max(start + 0.05, line.end + 0.18)
+        start = max(0.0, line.start + timing_offset)
+        end = max(start + 0.05, line.end + timing_offset + 0.18)
         events.append(
             f"Dialogue: 1,{seconds_to_ass(start)},{seconds_to_ass(end)},Current,,0,0,0,,{_karaoke_text(line)}"
         )
         if index + 1 < len(lines):
             next_line = lines[index + 1]
-            preview_end = max(start + 0.05, min(next_line.start, end))
+            next_start = max(0.0, next_line.start + timing_offset)
+            preview_end = max(start + 0.05, min(next_start, end))
             events.append(
                 f"Dialogue: 0,{seconds_to_ass(start)},{seconds_to_ass(preview_end)},Next,,0,0,0,,{_escape(next_line.text)}"
             )

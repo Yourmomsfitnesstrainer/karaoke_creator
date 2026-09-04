@@ -13,7 +13,7 @@ tags:
 ### CLI
 - `generate` — запускает полный pipeline из аудио и точного TXT.
 - `render` — повторно рендерит MP4 из отредактированного `alignment.json`.
-- `doctor` — проверяет Python, архитектуру, FFmpeg/libass, faster-whisper и Demucs.
+- `doctor` — проверяет Python, архитектуру, FFmpeg/libass, faster-whisper, WhisperX и Demucs.
 - `web` — запускает локальный FastAPI UI через Uvicorn.
 - Короткая форма с `--audio` без подкоманды маршрутизируется в `generate`; определения находятся в `@src/karaoke_generator/cli.py`.
 

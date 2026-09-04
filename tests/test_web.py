@@ -21,7 +21,13 @@ def _fake_generate(
         if progress_callback:
             progress_callback(progress, label)
     artifacts = {}
-    for filename in ("karaoke.mp4", "karaoke.ass", "alignment.json"):
+    for filename in (
+        "karaoke.mp4",
+        "karaoke.ass",
+        "alignment.json",
+        "processed_lyrics.txt",
+        "lyrics_cleanup.json",
+    ):
         path = output_dir / filename
         path.write_bytes(b"demo")
         artifacts[filename] = path
@@ -35,6 +41,10 @@ def test_index_contains_accessible_progress_loader() -> None:
     assert 'role="progressbar"' in response.text
     assert "'/api/jobs'" in response.text
     assert "job.progress" in response.text
+    assert 'name="backend"' in response.text
+    assert 'name="vad_filter"' in response.text
+    assert 'name="timing_offset_ms"' in response.text
+    assert "Alignment quality:" in response.text
 
 
 def test_language_name_and_whitespace_are_normalized() -> None:
@@ -45,6 +55,12 @@ def test_language_name_and_whitespace_are_normalized() -> None:
 def test_invalid_language_is_rejected_before_generation() -> None:
     with pytest.raises(HTTPException) as error:
         web._normalize_language("x")
+    assert error.value.status_code == 400
+
+
+def test_invalid_timing_offset_is_rejected() -> None:
+    with pytest.raises(HTTPException) as error:
+        web._normalize_generation_options("whisperx", "small", -1001)
     assert error.value.status_code == 400
 
 
@@ -107,3 +123,36 @@ def test_background_job_reports_configuration_failure(tmp_path: Path, monkeypatc
     status = web._job_snapshot("job")
     assert status["status"] == "failed"
     assert status["error"] == "config unavailable"
+
+
+def test_web_job_applies_alignment_controls(tmp_path: Path, monkeypatch) -> None:
+    captured: dict = {}
+
+    def capture_generate(audio, lyrics, output_dir, config, **kwargs):
+        captured["config"] = config
+        return _fake_generate(audio, lyrics, output_dir, config, **kwargs)
+
+    monkeypatch.setattr(web, "JOBS_ROOT", tmp_path)
+    monkeypatch.setattr(web, "generate", capture_generate)
+    web.JOBS.clear()
+    response = TestClient(web.app).post(
+        "/api/jobs",
+        files={
+            "audio": ("song.mp3", b"audio", "audio/mpeg"),
+            "lyrics": ("lyrics.txt", "Привет".encode(), "text/plain"),
+        },
+        data={
+            "language": "ru",
+            "audio_mode": "original",
+            "backend": "whisperx",
+            "model": "medium",
+            "vad_filter": "false",
+            "timing_offset_ms": "-325",
+        },
+    )
+
+    assert response.status_code == 202
+    assert captured["config"]["alignment"]["backend"] == "whisperx"
+    assert captured["config"]["alignment"]["model"] == "medium"
+    assert captured["config"]["alignment"]["vad_filter"] is False
+    assert captured["config"]["karaoke"]["timing_offset_ms"] == -325

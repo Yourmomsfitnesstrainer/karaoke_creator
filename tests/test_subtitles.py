@@ -27,3 +27,18 @@ def test_ass_uses_exact_words_kf_and_next_line(tmp_path: Path) -> None:
     assert "Dialogue: 0" in content
     assert "Next line" in content
 
+
+def test_ass_applies_negative_highlight_offset(tmp_path: Path) -> None:
+    document = parse_lyrics_text("Привет мир")
+    alignment = align_lyrics(
+        document,
+        [TimedWord("Привет", 1.0, 1.4, 1), TimedWord("мир", 1.4, 1.8, 1)],
+        3.0,
+        "ru",
+        "test",
+    )
+    output = tmp_path / "karaoke.ass"
+
+    generate_ass(alignment, output, {"timing_offset_ms": -250})
+
+    assert "Dialogue: 1,0:00:00.75" in output.read_text()

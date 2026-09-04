@@ -9,12 +9,18 @@ import yaml
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "alignment": {
-        "backend": "faster-whisper",
+        "backend": "whisperx",
         "language": "auto",
         "model": "small",
         "device": "auto",
         "compute_type": "int8",
         "min_similarity": 0.62,
+        "use_lyrics_prompt": True,
+        "vad_filter": True,
+        "vad_threshold": 0.30,
+        "vad_min_silence_duration_ms": 1000,
+        "vad_speech_pad_ms": 600,
+        "align_models": {"ru": "bond005/wav2vec2-base-ru"},
     },
     "separation": {"enabled": "auto", "backend": "demucs", "model": "htdemucs"},
     "video": {
@@ -32,6 +38,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "active_color": "#FFD43B",
         "inactive_color": "#F2F3F5",
         "preview_color": "#A7ABB7",
+        "timing_offset_ms": -250,
     },
     "output": {"audio_mode": "instrumental", "video_bitrate": "8M", "audio_bitrate": "256k"},
 }
@@ -55,4 +62,3 @@ def load_config(path: Path | None = None) -> dict[str, Any]:
             raise ValueError(f"Config root must be a mapping: {candidate}")
         _merge(config, loaded)
     return config
-
