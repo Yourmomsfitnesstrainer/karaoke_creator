@@ -41,6 +41,7 @@ def _parser() -> argparse.ArgumentParser:
     render_parser.add_argument("--audio", type=Path, required=True)
     render_parser.add_argument("--output", type=Path, required=True)
     render_parser.add_argument("--background")
+    render_parser.add_argument("--timing-offset-ms", type=int)
 
     subparsers.add_parser("doctor", help="Check local runtime dependencies")
     web_parser = subparsers.add_parser("web", help="Start the local web UI")
@@ -102,8 +103,9 @@ def _doctor() -> int:
 def main(argv: list[str] | None = None) -> None:
     argv = list(sys.argv[1:] if argv is None else argv)
     commands = {"generate", "render", "doctor", "web"}
-    if argv and argv[0] not in commands and any(arg == "--audio" for arg in argv):
-        argv.insert(0, "generate")
+    if argv and not any(arg in commands for arg in argv) and "--audio" in argv:
+        position = 2 if argv[0] == "--config" else 1 if argv[0].startswith("--config=") else 0
+        argv.insert(position, "generate")
     parser = _parser()
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -118,6 +120,7 @@ def main(argv: list[str] | None = None) -> None:
             print(f"  {name}: {path}")
         return
     if args.command == "render":
+        _apply_overrides(config, args)
         artifacts = rerender(args.alignment, args.audio, args.output, config, background=args.background)
         for name, path in artifacts.items():
             print(f"{name}: {path}")

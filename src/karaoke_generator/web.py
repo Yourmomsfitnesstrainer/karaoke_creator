@@ -53,9 +53,9 @@ button:disabled{cursor:wait;opacity:.65}small{color:#9fa5c5}.ok{color:#70e5b1}a{
 <label>Recognition model</label><select name="model"><option value="small" selected>Small — recommended locally</option><option value="medium">Medium — slower, more accurate text</option><option value="large-v3">Large v3 — slowest</option></select>
 <label class="check"><input name="vad_filter" type="checkbox" value="true" checked>Keep soft vocal activity detection</label>
 <small class="setting-help">Uncheck only if quiet sung words are being missed.</small>
-<label for="timing-offset">Highlight offset <output id="offset-value" class="setting-value">−250 ms</output></label>
-<input id="timing-offset" name="timing_offset_ms" type="range" min="-1000" max="1000" step="25" value="-250">
-<small class="setting-help">Negative values highlight earlier. Start with −250 ms.</small>
+<label for="timing-offset">Highlight offset <output id="offset-value" class="setting-value">0 ms</output></label>
+<input id="timing-offset" name="timing_offset_ms" type="range" min="-1000" max="1000" step="25" value="0">
+<small class="setting-help">Negative values highlight earlier. Start with 0 ms.</small>
 <label>Audio output</label><select name="audio_mode"><option value="instrumental">Instrumental</option><option value="original">Original</option></select>
 <button id="generate-button">Generate karaoke</button></form>
 <section id="progress-panel" aria-live="polite" hidden>
@@ -102,8 +102,13 @@ async function showArtifacts(artifacts){
     const alignment=await alignmentResponse.json(); const cleanup=await cleanupResponse.json();
     const quality=alignment.quality||{}; const ratio=Math.round((quality.aligned_ratio||0)*1000)/10;
     const summary=document.createElement('div');
-    summary.textContent=`Alignment quality: ${quality.directly_aligned||0}/${quality.total_words||0} words (${ratio}%), ${quality.interpolated||0} interpolated. Removed ${cleanup.removed_count||0} metadata lines.`;
+    summary.textContent=`Сопоставление текста: ${quality.directly_aligned||0}/${quality.total_words||0} words (${ratio}%), ${quality.interpolated||0} interpolated. Removed ${cleanup.removed_count||0} metadata lines.`;
     diagnostics.append(summary);
+    const timing=alignment.diagnostics||{}; const sources=timing.timing_sources||{};
+    const timingInfo=document.createElement('div');
+    const refiner=timing.refinement?.model?.name||'не используется';
+    timingInfo.textContent=`ASR: ${timing.asr?.model?.name||'неизвестно'}; уточнитель: ${refiner}; сдвиг: ${timing.effective_timing_offset_ms??'неизвестно'} мс. По аудио уточнено: ${sources.refined||0}; ASR: ${sources.asr||0}; приблизительное разделение: ${sources.approximate_split||0}; интерполяция: ${sources.interpolated||0}; ручные правки: ${sources.manual||0}; коррекции: ${sources.corrected||0}. Точность таймингов без эталонной разметки не измерена.`;
+    diagnostics.append(timingInfo);
     if(cleanup.removed_lines?.length){
       const details=document.createElement('details'); const label=document.createElement('summary');
       label.textContent='Show removed lyrics lines'; const removedList=document.createElement('ul');
@@ -239,7 +244,7 @@ def _run_job(
     backend: str = "whisperx",
     model: str = "small",
     vad_filter: bool = True,
-    timing_offset_ms: int = -250,
+    timing_offset_ms: int = 0,
 ) -> None:
     try:
         config = load_config()
@@ -288,7 +293,7 @@ def start_job(
     backend: str = Form("whisperx"),
     model: str = Form("small"),
     vad_filter: bool = Form(False),
-    timing_offset_ms: int = Form(-250),
+    timing_offset_ms: int = Form(0),
 ) -> dict[str, str]:
     prepared = _prepare_job(
         audio, lyrics, language, audio_mode, backend, model, timing_offset_ms
@@ -323,7 +328,7 @@ def generate_job(
     backend: str = Form("whisperx"),
     model: str = Form("small"),
     vad_filter: bool = Form(False),
-    timing_offset_ms: int = Form(-250),
+    timing_offset_ms: int = Form(0),
 ) -> str:
     prepared = _prepare_job(
         audio, lyrics, language, audio_mode, backend, model, timing_offset_ms

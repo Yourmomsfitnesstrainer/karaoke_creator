@@ -44,7 +44,7 @@ def test_index_contains_accessible_progress_loader() -> None:
     assert 'name="backend"' in response.text
     assert 'name="vad_filter"' in response.text
     assert 'name="timing_offset_ms"' in response.text
-    assert "Alignment quality:" in response.text
+    assert "Сопоставление текста:" in response.text
 
 
 def test_language_name_and_whitespace_are_normalized() -> None:

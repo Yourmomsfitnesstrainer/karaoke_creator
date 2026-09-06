@@ -76,6 +76,51 @@
       "source": "architecture/web-generation-jobs.spec.md",
       "target": "architecture/entry-points.doc.md",
       "type": "related"
+    },
+    {
+      "source": "lyrics-timing/word-timing-accuracy.prd.md",
+      "target": "architecture/lyrics-alignment.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "lyrics-timing/word-timing-accuracy.prd.md",
+      "target": "architecture/generation-pipeline.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "lyrics-timing/word-timing-accuracy.prd.md",
+      "target": "architecture/architecture-overview.doc.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/word-timing-render.spec.md",
+      "target": "lyrics-timing/word-timing-accuracy.prd.md",
+      "type": "implements"
+    },
+    {
+      "source": "architecture/word-timing-render.spec.md",
+      "target": "architecture/generation-pipeline.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "lyrics-timing/acoustic-evaluation.spec.md",
+      "target": "lyrics-timing/word-timing-accuracy.prd.md",
+      "type": "implements"
+    },
+    {
+      "source": "lyrics-timing/acoustic-evaluation.spec.md",
+      "target": "architecture/lyrics-alignment.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "architecture/architecture-overview.doc.md",
+      "target": "architecture/word-timing-render.spec.md",
+      "type": "related"
+    },
+    {
+      "source": "lyrics-timing/unreferenced-testing.adr.md",
+      "target": "lyrics-timing/acoustic-evaluation.spec.md",
+      "type": "related"
     }
   ]
 }

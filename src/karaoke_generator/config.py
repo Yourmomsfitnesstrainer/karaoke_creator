@@ -20,6 +20,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "vad_threshold": 0.30,
         "vad_min_silence_duration_ms": 1000,
         "vad_speech_pad_ms": 600,
+        "context_seconds": 0.3,
+        "max_window_seconds": 20.0,
+        "score_thresholds": {},
         "align_models": {"ru": "bond005/wav2vec2-base-ru"},
     },
     "separation": {"enabled": "auto", "backend": "demucs", "model": "htdemucs"},
@@ -38,7 +41,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "active_color": "#FFD43B",
         "inactive_color": "#F2F3F5",
         "preview_color": "#A7ABB7",
-        "timing_offset_ms": -250,
+        "timing_offset_ms": 0,
     },
     "output": {"audio_mode": "instrumental", "video_bitrate": "8M", "audio_bitrate": "256k"},
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import math
 from pathlib import Path
 
 from .models import AlignedLine, AlignmentResult
@@ -60,13 +61,17 @@ def _split_visual_lines(lines: list[AlignedLine], max_chars: int) -> list[Aligne
     return output
 
 
-def _karaoke_text(line: AlignedLine) -> str:
+def _karaoke_text(line: AlignedLine, origin_cs: int, offset: float) -> str:
+    """Quantize absolute boundaries; kt also preserves progress before time zero."""
     parts: list[str] = []
     for index, word in enumerate(line.words):
-        next_start = line.words[index + 1].start if index + 1 < len(line.words) else word.end
-        duration_cs = max(1, int(round((max(word.end, next_start) - word.start) * 100)))
-        prefix = "" if index == 0 else " "
-        parts.append(f"{{\\kf{duration_cs}}}{prefix}{_escape(word.text)}")
+        start_cs = round((word.start + offset) * 100)
+        end_cs = round((word.end + offset) * 100)
+        prefix = "" if index == 0 else r"{\k0} "
+        parts.append(
+            f"{prefix}{{\\kt{start_cs - origin_cs}}}"
+            f"{{\\kf{max(0, end_cs - start_cs)}}}{_escape(word.text)}"
+        )
     return "".join(parts)
 
 
@@ -80,6 +85,13 @@ def generate_ass(result: AlignmentResult, output: Path, settings: dict) -> None:
     preview = _ass_color(settings.get("preview_color", "#A7ABB7"))
     max_chars = int(settings.get("max_chars_per_line", 42))
     timing_offset = float(settings.get("timing_offset_ms", 0)) / 1000.0
+    if not math.isfinite(timing_offset) or not -1 <= timing_offset <= 1:
+        raise ValueError("Timing offset must be between -1000 and 1000 ms")
+    for line in result.lines:
+        for word in line.words:
+            if not (math.isfinite(word.start) and math.isfinite(word.end)
+                    and 0 <= word.start < word.end <= result.duration):
+                raise ValueError(f"Invalid canonical timing for word: {word.text}")
     lines = _split_visual_lines(result.lines, max_chars)
 
     header = f"""[Script Info]
@@ -101,10 +113,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     events: list[str] = []
     for index, line in enumerate(lines):
-        start = max(0.0, line.start + timing_offset)
-        end = max(start + 0.05, line.end + timing_offset + 0.18)
+        start = max(0, round((min(w.start for w in line.words) + timing_offset) * 100)) / 100
+        end = max(w.end for w in line.words) + timing_offset + 0.18
+        if end <= start:
+            continue
         events.append(
-            f"Dialogue: 1,{seconds_to_ass(start)},{seconds_to_ass(end)},Current,,0,0,0,,{_karaoke_text(line)}"
+            f"Dialogue: 1,{seconds_to_ass(start)},{seconds_to_ass(end)},Current,,0,0,0,,{_karaoke_text(line, round(start * 100), timing_offset)}"
         )
         if index + 1 < len(lines):
             next_line = lines[index + 1]

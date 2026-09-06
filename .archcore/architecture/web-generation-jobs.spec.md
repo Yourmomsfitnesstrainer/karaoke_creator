@@ -29,10 +29,14 @@ tags:
 7. Web UI MUST позволять выбрать `whisperx` или `faster-whisper`, модель `small`, `medium` или `large-v3`, состояние VAD и timing offset.
 8. WHEN пользователь вводит `English` или `Russian`, Web API MUST преобразовать значение в `en` или `ru`.
 9. WHILE индикатор видим, Web UI MUST обновлять `aria-valuenow` текущим процентом.
+10. WHEN результат готов, Web UI MUST назвать долю текстовых совпадений «Сопоставление текста».
+11. WHEN результат готов, Web UI MUST показать модели ASR/уточнения, применённый offset и числа источников тайминга.
 
 ## Constraints & Invariants
 - `progress` MUST оставаться в диапазоне 0–100 и не уменьшаться.
 - Timing offset MUST находиться в диапазоне −1000…+1000 мс; отрицательное значение означает раннюю подсветку.
+- Default формы и HTTP-параметра равен 0 мс.
+- Без эталонной разметки Web показывает отсутствие измеренной точности времени.
 - Web API MUST защищать чтение и изменение `JOBS` одним lock.
 - Web API MUST хранить job в памяти одного локального Uvicorn-процесса и сохранять файлы под системным временным каталогом.
 - Endpoint артефактов MUST разрешать только `karaoke.mp4`, `karaoke.ass`, `alignment.json`, `processed_lyrics.txt` и `lyrics_cleanup.json`.

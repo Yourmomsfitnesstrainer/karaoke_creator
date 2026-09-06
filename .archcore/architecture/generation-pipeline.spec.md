@@ -8,7 +8,7 @@ tags:
 
 ## Purpose & Scope
 Спецификация определяет оркестрацию полного локального пути `original MP3 + lyrics.txt → artifacts`. Её потребляют CLI и локальный Web UI.
-За пределами: внутренние алгоритмы alignment, ASS и FFmpeg-фильтры.
+За пределами: внутренние алгоритмы alignment, ASS и FFmpeg-фильтры. Кеш стадий реализует @src/karaoke_generator/timing_cache.py.
 
 ## Surface
 - Полная генерация: `generate` в `@src/karaoke_generator/pipeline.py`.
@@ -25,9 +25,17 @@ tags:
 7. WHEN `rerender` вызывается, pipeline MUST пропустить ML и создать ASS вместе с MP4.
 8. WHEN alignment завершён, pipeline MUST записать в лог и metadata числа распознанных, напрямую сопоставленных и интерполированных слов.
 9. WHEN создаётся ASS, pipeline MUST передать `timing_offset_ms` из karaoke-конфигурации.
+10. WHEN меняется модель уточнения, pipeline MUST повторно использовать совпадающий ASR-кеш.
+11. WHEN совпадает ключ сопоставления, pipeline MUST сохранить канонические ручные правки alignment.json.
+12. WHEN генерация завершается, pipeline MUST записать фактические настройки, хеши входов, версии и длительности стадий.
+13. WHEN вызывается rerender, pipeline MUST записать применённый offset в лог и отдельный `.render.json`.
 
 ## Constraints & Invariants
-- The cache key MUST включать SHA-256 аудио, SHA-256 очищенного текста и соответствующую конфигурацию alignment.
+- Ключ ASR включает SHA-256 фактического WAV, текст prompt, язык, ASR/VAD-настройки, версии алгоритма и зависимостей, доступную ревизию модели.
+- Ключ уточнения включает ключ ASR, модель, контекст, порог score, версии уточнителя и зависимостей.
+- Ключ сопоставления включает ключ времён, версию mapping, SHA-256 TXT и порог сходства.
+- Оформление и offset исключены из ML-ключей.
+- Каждая стадия кеша публикуется атомарно до запуска последующей стадии.
 - The pipeline MUST публиковать JSON через временный файл и атомарную замену.
 - The result MUST включать video, subtitles, alignment, processed lyrics, cleanup report и vocals.
 - The metadata MUST различать requested и actual audio mode.

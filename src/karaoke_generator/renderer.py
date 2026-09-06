@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 
 from .audio import find_ffmpeg, probe_duration, run_command
 
@@ -15,14 +16,14 @@ def render_video(
     video: dict,
     output_settings: dict,
     background: str | None = None,
-) -> None:
+) -> dict:
     ffmpeg = find_ffmpeg(require_ass=True)
     duration = probe_duration(audio_path, ffmpeg)
     width = int(video.get("width", 1920))
     height = int(video.get("height", 1080))
     fps = int(video.get("fps", 30))
     background = background or str(video.get("background", "procedural"))
-    common = [ffmpeg, "-y", "-hide_banner", "-loglevel", "error"]
+    common = [ffmpeg, "-y", "-hide_banner", "-loglevel", "info"]
 
     if background == "procedural":
         source = (
@@ -51,12 +52,14 @@ def render_video(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = output_path.with_name(output_path.stem + ".tmp.mp4")
     # Run inside the ASS directory so the filter never has to parse escaped absolute paths.
-    filter_graph = f"{scale_filter}ass=filename={ass_path.name}"
+    filter_graph = f"{scale_filter}setpts=PTS-STARTPTS,ass=filename={ass_path.name}"
     command = common + inputs + [
         "-i",
         str(audio_path.resolve()),
         "-vf",
         filter_graph,
+        "-af",
+        "asetpts=N/SR/TB",
         "-map",
         "0:v:0",
         "-map",
@@ -81,6 +84,10 @@ def render_video(
         "+faststart",
         str(temp_path.resolve()),
     ]
-    run_command(command, cwd=ass_path.parent)
+    log = run_command(command, cwd=ass_path.parent)
     temp_path.replace(output_path)
+    return {"ffmpeg_binary": ffmpeg,
+            "ffmpeg_version": subprocess.check_output([ffmpeg, "-version"], text=True).splitlines()[0], "versions": [line.strip() for line in log.splitlines()
+            if "libass API version" in line or "libass source" in line],
+            "settings": {"fps": fps, "width": width, "height": height, "background": background}}
 

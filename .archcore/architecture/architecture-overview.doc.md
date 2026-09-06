@@ -6,7 +6,9 @@ tags:
   - "architecture-overview"
 ---
 
-5 modules; Python; FFmpeg/libass + faster-whisper + WhisperX; pytest
+## Overview
+
+Python; FFmpeg/libass + faster-whisper + WhisperX; pytest
 
 | Area | Type | Covers |
 |---|---|---|
@@ -19,5 +21,4 @@ tags:
 | Hotspot: pipeline | spec | стадии, cache и artifacts |
 | Hotspot: CLI | spec | аргументы, overrides и dispatch |
 
-Ranked hotspots not yet specced (run /archcore:document to document):
-- subtitles: `@src/karaoke_generator/subtitles.py` — 114 LOC, 29 LOC tests → /archcore:document src/karaoke_generator/subtitles.py
+Перенос JSON → ASS → MP4 использует абсолютные границы в @src/karaoke_generator/subtitles.py. Происхождение таймингов хранится в schema 3. Раздельные ASR/refinement-кеши находятся в @src/karaoke_generator/timing_cache.py; метрики акустической приёмки — в @src/karaoke_generator/evaluation.py. Проверка синтетического рендера не доказывает акустическую точность на песнях.
